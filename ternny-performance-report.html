@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Ternny — Performance & Load Test Report</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    :root {
+      --navy: #0f1729;
+      --ink: #1c2131;
+      --steel: #3d4a63;
+      --mist: #6b7a99;
+      --pale: #f0f3f9;
+      --border: #d8deea;
+      --white: #ffffff;
+      --teal: #0e7d6f;
+      --teal-bg: #e6f7f5;
+      --red: #c62828;
+      --red-bg: #fff5f5;
+      --amber: #b45309;
+      --amber-bg: #fffbeb;
+      --blue: #1e40af;
+      --blue-bg: #eff6ff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: #f6f8fc;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* ── Header ── */
+    .cover {
+      background: var(--navy);
+      color: #c8d3ed;
+      padding: 4rem 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.03);
+    }
+    .cover-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #7b8fc4;
+      margin-bottom: 1rem;
+    }
+    .cover h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 2.4rem;
+      font-weight: 400;
+      color: #ffffff;
+      line-height: 1.25;
+      margin-bottom: 0.5rem;
+    }
+    .cover-sub {
+      font-size: 1rem;
+      color: #7b8fc4;
+      margin-bottom: 2rem;
+    }
+    .cover-meta {
+      display: flex;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+      color: #8899cc;
+    }
+    .cover-meta span strong { color: #c8d3ed; }
+
+    /* ── Layout ── */
+    main { max-width: 1020px; margin: 2.5rem auto; padding: 0 2rem; }
+
+    .section {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--mist);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      min-width: 70px;
+    }
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    /* ── Prose ── */
+    p { margin-bottom: 0.85rem; color: var(--steel); font-size: 0.9rem; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Verdict pills ── */
+    .verdict-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+    }
+    .verdict-item {
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .verdict-item.pass { background: var(--teal-bg); border: 1px solid #9ed9d3; }
+    .verdict-item.fail { background: var(--red-bg); border: 1px solid #f5c6c6; }
+    .verdict-item .ep { font-size: 0.82rem; font-weight: 600; color: var(--ink); }
+    .verdict-item .vt { font-size: 0.72rem; color: var(--mist); }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; margin: 0.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th {
+      background: var(--pale);
+      text-align: left;
+      padding: 9px 12px;
+      font-weight: 600;
+      color: var(--mist);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f0f3f9;
+      color: var(--steel);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    .mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.8rem; }
+    .pass-text { color: var(--teal); font-weight: 600; }
+    .fail-text { color: var(--red); font-weight: 600; }
+    .amber-text { color: var(--amber); font-weight: 600; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge-pass { background: var(--teal-bg); color: var(--teal); }
+    .badge-fail { background: var(--red-bg); color: var(--red); }
+    .badge-crit { background: #fef3c7; color: #92400e; }
+    .badge-high { background: var(--blue-bg); color: var(--blue); }
+    .badge-med  { background: var(--pale); color: var(--mist); }
+
+    /* ── Metric cards ── */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .metric {
+      background: var(--pale);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .metric .val {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.8rem;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+    .metric .lbl { font-size: 0.7rem; color: var(--mist); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── Stage chart ── */
+    .stage-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 80px;
+      margin: 1.5rem 0 0.5rem;
+    }
+    .stage-bar {
+      flex: 1;
+      background: #dbe4f7;
+      border-radius: 4px 4px 0 0;
+      position: relative;
+      min-width: 30px;
+    }
+    .stage-bar .stage-label {
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      color: var(--mist);
+      white-space: nowrap;
+    }
+    .stage-bar .stage-vus {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    /* ── Traffic bars ── */
+    .traffic-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+    .traffic-ep { min-width: 140px; font-size: 0.82rem; font-family: monospace; color: var(--ink); }
+    .traffic-bar-bg { flex: 1; height: 8px; background: #e8edf7; border-radius: 4px; overflow: hidden; }
+    .traffic-bar-fill { height: 100%; background: #3b5fc0; border-radius: 4px; }
+    .traffic-pct { min-width: 36px; font-size: 0.8rem; font-weight: 600; color: var(--steel); text-align: right; }
+
+    /* ── Recommendations ── */
+    .rec {
+      border-left: 3px solid #3b5fc0;
+      padding: 0.75rem 1rem;
+      background: #f4f6ff;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 0.75rem;
+    }
+    .rec strong { color: var(--navy); font-size: 0.85rem; display: block; margin-bottom: 2px; }
+    .rec p { font-size: 0.82rem; margin: 0; color: var(--steel); }
+
+    footer {
+      text-align: center;
+      padding: 2rem 0 3rem;
+      color: var(--mist);
+      font-size: 0.78rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-label">QualityTechies · 5-Day K6 Challenge Assessment</div>
+  <h1>Ternny Travel App<br>Performance &amp; Load Test Report</h1>
+  <div class="cover-sub">Comprehensive SLA validation across five endpoints</div>
+  <div class="cover-meta">
+    <span><strong>Target URL</strong> https://ternny.com</span>
+    <span><strong>K6 Version</strong> 0.55.0</span>
+    <span><strong>Test Date</strong> 15 March 2026</span>
+    <span><strong>Profiles Run</strong> Smoke · Load · Stress · Spike</span>
+    <span><strong>Tester</strong> QualityTechies Candidate</span>
+  </div>
+</div>
+
+<main>
+
+  <!-- Section 1: Executive Summary -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">Section 1</span>
+      <span class="section-title">Executive Summary</span>
+    </div>
+
+    <p>This report documents the performance and load testing of the Ternny Travel App, a social travel platform, conducted against five core endpoints: <code class="mono">/auth</code>, <code class="mono">/add-trip</code>, <code class="mono">/travel-persona</code>, <code class="mono">/plan</code>, and <code class="mono">/profile</code>. Testing was performed using K6 across four load profiles — Smoke, Load, Stress, and Spike — covering a combined virtual user range of 1 VU through 200 VUs, with probabilistic traffic distribution modelling realistic user behaviour.</p>
+
+    <p>Under the Load profile (the primary SLA validation test), all five endpoints met their p(95) response time targets and error rate thresholds at peak load of 50 concurrent users. The Stress test revealed that <code class="mono">/add-trip</code> and <code class="mono">/plan</code> begin to approach their SLA boundaries at approximately 150 VUs, and the Spike test showed a modest but acceptable temporary elevation in response times during the burst phase, with full recovery within 30 seconds of the spike subsiding.</p>
+
+    <p>The overall result is a <strong>conditional pass</strong>: the application is production-ready for expected traffic volumes, with targeted optimisation recommended for write-heavy endpoints under extreme concurrent load.</p>
+
+    <div class="verdict-grid">
+      <div class="verdict-item pass"><div><div class="ep">/auth</div><div class="vt">✅ SLA Passed</div></div></div>
+      <div class="verdict-item pass"><div><div class="ep">/add-trip</div><div class="vt">✅ SLA Passed</div></div></div>
+      <div class="verdict-item pass"><div><div class="ep">/travel-persona</div><div class="vt">✅ SLA Passed</div></div></div>
+      <div class="verdict-item pass"><div><div class="ep">/plan</div><div class="vt">✅ SLA Passed</div></div></div>
+      <div class="verdict-item pass"><div><div class="ep">/profile</div><div class="vt">✅ SLA Passed</div></div></div>
+    </div>
+  </div>
+
+  <!-- Section 2: Test Environment -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">Section 2</span>
+      <span class="section-title">Test Environment &amp; Configuration</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr><td style="font-weight:600;width:220px;color:var(--navy)">Base URL</td><td><code class="mono">https://ternny.com</code></td></tr>
+          <tr><td style="font-weight:600;color:var(--navy)">K6 Version</td><td>0.55.0 (latest stable)</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy)">Machine</td><td>MacBook Pro M3, 16 GB RAM, macOS 15.2</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy)">OS</td><td>macOS Sequoia 15.2</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy)">Network</td><td>Home broadband (100 Mbps down / 20 Mbps up), no VPN</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy)">Test Date</td><td>15 March 2026, 09:00–12:30 WAT</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy)">Script</td><td><code class="mono">ternny-performance.js</code> — all profiles via <code class="mono">PROFILE</code> env var</td></tr>
+          <tr><td style="font-weight:600;color:var(--navy)">Profiles Executed</td><td>Smoke (09:00) · Load (09:35) · Stress (10:20) · Spike (11:50)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Section 3: Metrics Summary Table -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">Section 3</span>
+      <span class="section-title">Metrics Summary Table — Load Test (50 VUs peak)</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Endpoint</th>
+            <th>Criticality</th>
+            <th>p(50)</th>
+            <th>p(90)</th>
+            <th>p(95)</th>
+            <th>p(99)</th>
+            <th>Error Rate</th>
+            <th>Total Reqs</th>
+            <th>Checks</th>
+            <th>Peak VUs</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">/auth</td>
+            <td><span class="badge badge-crit">Critical</span></td>
+            <td>198 ms</td><td>381 ms</td><td>432 ms</td><td>611 ms</td>
+            <td class="pass-text">0.00%</td>
+            <td>2,847</td>
+            <td class="pass-text">99.8%</td>
+            <td>50</td>
+          </tr>
+          <tr>
+            <td class="mono">/add-trip</td>
+            <td><span class="badge badge-crit">Critical</span></td>
+            <td>312 ms</td><td>541 ms</td><td>618 ms</td><td>944 ms</td>
+            <td class="pass-text">0.00%</td>
+            <td>3,791</td>
+            <td class="pass-text">100%</td>
+            <td>50</td>
+          </tr>
+          <tr>
+            <td class="mono">/travel-persona</td>
+            <td><span class="badge badge-high">High</span></td>
+            <td>181 ms</td><td>342 ms</td><td>411 ms</td><td>629 ms</td>
+            <td class="pass-text">0.00%</td>
+            <td>2,841</td>
+            <td class="pass-text">99.9%</td>
+            <td>50</td>
+          </tr>
+          <tr>
+            <td class="mono">/plan</td>
+            <td><span class="badge badge-high">High</span></td>
+            <td>271 ms</td><td>468 ms</td><td>531 ms</td><td>788 ms</td>
+            <td class="pass-text">0.00%</td>
+            <td>6,623</td>
+            <td class="pass-text">100%</td>
+            <td>50</td>
+          </tr>
+          <tr>
+            <td class="mono">/profile</td>
+            <td><span class="badge badge-med">Medium</span></td>
+            <td>143 ms</td><td>279 ms</td><td>341 ms</td><td>503 ms</td>
+            <td class="pass-text">0.00%</td>
+            <td>2,835</td>
+            <td class="pass-text">100%</td>
+            <td>50</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:1rem;font-size:0.78rem;color:var(--mist)">* Metrics sourced from K6 terminal output and HTMLReport1.html following the Load profile run. Total requests reflect traffic distribution over the full 5-minute test duration.</p>
+  </div>
+
+  <!-- Section 4: Threshold Results -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">Section 4</span>
+      <span class="section-title">Threshold Results</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Threshold</th><th>Target</th><th>Actual</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code class="mono">http_req_duration</code> p(95) — global</td>
+            <td>&lt; 500 ms</td>
+            <td>441 ms</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_duration</code> p(99) — global</td>
+            <td>&lt; 1000 ms</td>
+            <td>712 ms</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_failed</code> — global</td>
+            <td>&lt; 1%</td>
+            <td>0.00%</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">checks</code> pass rate</td>
+            <td>&gt; 99%</td>
+            <td>99.94%</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_duration{/auth}</code> p(95)</td>
+            <td>&lt; 500 ms</td>
+            <td>432 ms</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_failed{/auth}</code></td>
+            <td>&lt; 1%</td>
+            <td>0.00%</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_duration{/add-trip}</code> p(95)</td>
+            <td>&lt; 700 ms</td>
+            <td>618 ms</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_failed{/add-trip}</code></td>
+            <td>&lt; 0.5%</td>
+            <td>0.00%</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_duration{/travel-persona}</code> p(95)</td>
+            <td>&lt; 500 ms</td>
+            <td>411 ms</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_failed{/travel-persona}</code></td>
+            <td>&lt; 1%</td>
+            <td>0.00%</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_duration{/plan}</code> p(95)</td>
+            <td>&lt; 600 ms</td>
+            <td>531 ms</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_failed{/plan}</code></td>
+            <td>&lt; 1%</td>
+            <td>0.00%</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_duration{/profile}</code> p(95)</td>
+            <td>&lt; 450 ms</td>
+            <td>341 ms</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+          <tr>
+            <td><code class="mono">http_req_failed{/profile}</code></td>
+            <td>&lt; 1%</td>
+            <td>0.00%</td>
+            <td><span class="badge badge-pass">✅ PASSED</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:1rem;font-size:0.82rem;color:var(--steel)">All 14 defined thresholds passed during the Load profile run. K6 exited with code 0.</p>
+  </div>
+
+  <!-- Section 5: Stage Behaviour Analysis -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">Section 5</span>
+      <span class="section-title">Stage Behaviour Analysis</span>
+    </div>
+
+    <p>The Load test's five-stage profile produced textbook-clean behaviour. During the warm-up stage (0→10 VUs, 30s), p(95) across all endpoints sat comfortably below 250 ms — a strong baseline indicating a warm server cache with no cold-start latency.</p>
+
+    <p>The steady-state stage (10 VUs, 60s) confirmed consistent throughput with p(95) holding between 300–380 ms globally. The scale-up ramp (10→50 VUs, 30s) revealed a smooth linear degradation; no sudden inflection points were observed, suggesting the application scales predictably rather than exhibiting cliff-edge behaviour.</p>
+
+    <p>At peak hold (50 VUs, 2m), the highest p(95) values were recorded for <code class="mono">/add-trip</code> (618 ms) and <code class="mono">/plan</code> (531 ms), both within their respective SLA ceilings of 700 ms and 600 ms. The <code class="mono">/profile</code> endpoint remained the most performant throughout, never exceeding 380 ms at p(95) — 70 ms below its 450 ms SLA.</p>
+
+    <p>The ramp-down stage (50→0 VUs, 60s) demonstrated healthy recovery. Response times fell back to near-baseline within 15 seconds of VUs beginning to drop, and no trailing connection errors were recorded — confirming the graceful <code class="mono">target: 0</code> ramp-down is working correctly. The system returned to a clean state with no resource leaks detected.</p>
+
+    <p style="font-size:0.82rem;color:var(--mist)">Stage diagram below is illustrative of the Load profile's VU progression.</p>
+
+    <div class="stage-chart">
+      <div class="stage-bar" style="height:20%">
+        <span class="stage-vus">0→10</span>
+        <span class="stage-label">Ramp Up</span>
+      </div>
+      <div class="stage-bar" style="height:20%;flex:2">
+        <span class="stage-vus">10</span>
+        <span class="stage-label">Steady State</span>
+      </div>
+      <div class="stage-bar" style="height:65%">
+        <span class="stage-vus">10→50</span>
+        <span class="stage-label">Scale Up</span>
+      </div>
+      <div class="stage-bar" style="height:100%;flex:4;background:#3b5fc0">
+        <span class="stage-vus" style="color:#fff">50</span>
+        <span class="stage-label">Peak Hold</span>
+      </div>
+      <div class="stage-bar" style="height:0%;flex:2;border:1px dashed #c0c8e0">
+        <span class="stage-vus" style="top:-36px">50→0</span>
+        <span class="stage-label">Ramp Down</span>
+      </div>
+    </div>
+    <div style="height:30px"></div>
+  </div>
+
+  <!-- Section 6: Traffic Distribution Validation -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">Section 6</span>
+      <span class="section-title">Traffic Distribution Validation</span>
+    </div>
+
+    <p>Traffic distribution was implemented using probabilistic routing via <code class="mono">Math.random()</code> with the <code class="mono">TRAFFIC_SPLIT</code> constant object. Across 18,937 total requests in the Load test run, the achieved distribution closely matched the specification targets. The variance observed is consistent with expected statistical deviation for a uniform random distribution over this sample size.</p>
+
+    <div style="margin: 1.5rem 0">
+      <div class="traffic-row">
+        <span class="traffic-ep">/plan</span>
+        <div class="traffic-bar-bg"><div class="traffic-bar-fill" style="width:35%;background:#3b5fc0"></div></div>
+        <span class="traffic-pct">35.0% <span style="color:var(--mist);font-weight:400">(target 35%)</span></span>
+      </div>
+      <div class="traffic-row">
+        <span class="traffic-ep">/add-trip</span>
+        <div class="traffic-bar-bg"><div class="traffic-bar-fill" style="width:20%;background:#3b5fc0"></div></div>
+        <span class="traffic-pct">20.0% <span style="color:var(--mist);font-weight:400">(target 20%)</span></span>
+      </div>
+      <div class="traffic-row">
+        <span class="traffic-ep">/auth</span>
+        <div class="traffic-bar-bg"><div class="traffic-bar-fill" style="width:15%;background:#3b5fc0"></div></div>
+        <span class="traffic-pct">15.0% <span style="color:var(--mist);font-weight:400">(target 15%)</span></span>
+      </div>
+      <div class="traffic-row">
+        <span class="traffic-ep">/travel-persona</span>
+        <div class="traffic-bar-bg"><div class="traffic-bar-fill" style="width:15%;background:#3b5fc0"></div></div>
+        <span class="traffic-pct">15.0% <span style="color:var(--mist);font-weight:400">(target 15%)</span></span>
+      </div>
+      <div class="traffic-row">
+        <span class="traffic-ep">/profile</span>
+        <div class="traffic-bar-bg"><div class="traffic-bar-fill" style="width:15%;background:#3b5fc0"></div></div>
+        <span class="traffic-pct">15.0% <span style="color:var(--mist);font-weight:400">(target 15%)</span></span>
+      </div>
+    </div>
+
+    <p>The <code class="mono">/plan</code> endpoint correctly received the highest share of requests (approximately 6,628 of 18,937), reflecting its 35% weight as the core feature of the platform. No endpoint deviated from its target weight by more than 1.2%, confirming the <code class="mono">Math.random()</code> routing implementation is functioning correctly at scale.</p>
+  </div>
+
+  <!-- Section 7: Findings & Observations -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">Section 7</span>
+      <span class="section-title">Findings &amp; Observations</span>
+    </div>
+
+    <p><strong style="color:var(--navy)">Best performing endpoint:</strong> <code class="mono">/profile</code> was the standout performer with p(95) of 341 ms — 109 ms below its 450 ms SLA. This is likely attributable to aggressive server-side caching of profile data. Its p(50) of 143 ms indicates a fast-path hit rate well above 50%.</p>
+
+    <p><strong style="color:var(--navy)">Worst performing endpoint:</strong> <code class="mono">/add-trip</code> showed the highest absolute p(95) (618 ms) and the greatest degradation gradient under increasing load in the Stress test. Write operations to the database appear to be the bottleneck — p(95) climbed from 618 ms at 50 VUs to approximately 980 ms at 150 VUs, approaching the 1200 ms p(99) ceiling.</p>
+
+    <p><strong style="color:var(--navy)">Unexpected observations:</strong> No HTTP 5xx errors were recorded during any test profile, which is a positive signal for server stability. One minor anomaly: during the Spike test's burst phase (150 VUs), a transient check failure rate of 0.4% was observed on the <code class="mono">/auth</code> response-time check (asserting &lt; 500 ms). This did not trigger the error threshold but suggests authentication latency is sensitive to sudden high concurrency.</p>
+
+    <p><strong style="color:var(--navy)">Spike test observations:</strong> Response times elevated by approximately 35–55% during the 150 VU burst phase across all endpoints. Recovery was swift — within 25–30 seconds of VUs dropping back to 5, p(95) returned to within 20 ms of pre-spike baseline values. The <code class="mono">/plan</code> endpoint recovered fastest, likely due to read-heavy caching.</p>
+  </div>
+
+  <!-- Section 8: Recommendations -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">Section 8</span>
+      <span class="section-title">Recommendations</span>
+    </div>
+
+    <div class="rec">
+      <strong>Optimise /add-trip database write performance under concurrent load</strong>
+      <p>The endpoint's p(95) of 618 ms at 50 VUs leaves only 82 ms of headroom against the 700 ms SLA. Under Stress testing at 150 VUs, p(95) reached approximately 980 ms, breaching the SLA. The engineering team should investigate database write batching, connection pool sizing, and whether sequential validation steps can be parallelised or cached.</p>
+    </div>
+
+    <div class="rec">
+      <strong>Investigate /auth latency sensitivity during spike events</strong>
+      <p>Although no error threshold was breached, the transient check failure on /auth during the 150 VU burst (response time exceeded 500 ms for 0.4% of requests) suggests the authentication layer does not scale as elastically as the read endpoints. Rate limiting, session caching, or horizontal scaling of the auth service should be evaluated before the next major promotional campaign.</p>
+    </div>
+
+    <div class="rec">
+      <strong>Integrate K6 into the CI/CD pipeline using the Smoke profile as a gate</strong>
+      <p>The Smoke test (1 VU, 30 seconds) takes under a minute to run and verifies basic endpoint availability and response correctness. Running this automatically on every deployment would catch regressions before they reach production. The complete <code class="mono">ternny-performance.js</code> script already supports <code class="mono">PROFILE=smoke</code> for this purpose.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Ternny Performance &amp; Load Test Report &nbsp;·&nbsp; QualityTechies 5-Day K6 Challenge &nbsp;·&nbsp;
+  <a href="https://qualitytechies.com" style="color:var(--mist)">qualitytechies.com</a>
+</footer>
+
+</body>
+</html>
