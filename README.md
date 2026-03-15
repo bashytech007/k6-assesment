@@ -136,6 +136,6 @@ All endpoints returned HTTP 200 with 0% application error rate.
 > All HTTP requests returned valid responses.
 ## About
 
-Built as part of the [QualityTechies](https://qualitytechies.com) 5-Day K6 Performance Testing Challenge.
+Built as part of the [QualityTechies](https://www.youtube.com/@QualityTechies) 5-Day K6 Performance Testing Challenge.
 
 `#K6 #PerformanceTesting #QualityTechies #5DayChallenge`
